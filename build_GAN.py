@@ -98,55 +98,29 @@ def build_GAN(latent_dimensions):
         Discriminator: The discriminator Keras model.
         GAN: The complete generative adversarial network.
     '''
-    # Generator:
-    height, width, depth = 1, 512, 12
+    # Generator - Recurrent architecture:
+    frequency_dimensions, time_steps = 512, 75
 
-    latent_features = keras.Input(shape=(latent_dimensions,))
+    latent_features = keras.Input(shape=(latent_dimensions, 1))
 
-    # Convolutional architecture:
-    dense_1 = keras.layers.Dense(
-        height * width * depth,
-        use_bias=False
-    )(latent_features)
+    lstm = keras.layers.LSTM(frequency_dimensions)(latent_features)
 
-    batch_normalization_1 = keras.layers.BatchNormalization()(dense_1)
+    reshape = keras.layers.Reshape([frequency_dimensions, 1])(lstm)
 
-    leaky_relu_1 = keras.layers.LeakyReLU()(batch_normalization_1)
+    lstm_t = keras.layers.LSTM(frequency_dimensions)(reshape)
 
-    reshape_1 = keras.layers.Reshape((height, width, depth))(leaky_relu_1)
+    reshape_2 = keras.layers.Reshape([1, frequency_dimensions, 1])(lstm_t)
 
-    conv2d_1 = keras.layers.Conv2DTranspose(
-            12, (3, 3), strides=(5, 1), padding='same', use_bias=False
-    )(reshape_1)
+    for _ in range(time_steps - 1):
+        lstm_t2 = keras.layers.LSTM(frequency_dimensions)(reshape)
 
-    assert conv2d_1.shape == (None, 5, 512, 12)
+        reshape_cat = keras.layers.Reshape(
+            [1, frequency_dimensions, 1])(lstm_t2)
 
-    batch_normalization_2 = keras.layers.BatchNormalization()(conv2d_1)
-
-    leaky_relu_2 = keras.layers.LeakyReLU()(batch_normalization_2)
-
-    conv2d_2 = keras.layers.Conv2DTranspose(
-            12, (4, 4), strides=(5, 1), padding='same', use_bias=False
-    )(leaky_relu_2)
-
-    assert conv2d_2.shape == (None, 25, 512, 12)
-
-    batch_normalization_3 = keras.layers.BatchNormalization()(conv2d_2)
-
-    leaky_relu_3 = keras.layers.LeakyReLU()(batch_normalization_3)
-
-    conv2d_3 = keras.layers.Conv2DTranspose(
-            filters=1,
-            kernel_size=(5, 5),
-            strides=(3, 1),
-            padding='same',
-            use_bias=False,
-            activation='tanh'
-    )(leaky_relu_3)
-
-    assert conv2d_3.shape == (None, 75, 512, 1)
-
-    reshape_2 = keras.layers.Reshape((75, 512))(conv2d_3)
+        reshape_2 = keras.layers.Concatenate(axis=1)([
+            reshape_2,
+            reshape_cat
+        ])
 
     generator = keras.Model(latent_features, reshape_2)
 
@@ -182,7 +156,7 @@ def build_GAN(latent_dimensions):
             kernel_size=(5, 5),
             strides=(2, 2),
             padding='same',
-            input_shape=(*generator.output_shape[1:], 1)
+            input_shape=(time_steps, frequency_dimensions, 1)
         )
     )
 
@@ -206,3 +180,6 @@ def build_GAN(latent_dimensions):
     gan = GAN(discriminator, generator, latent_dimensions)
 
     return generator, discriminator, gan
+
+if __name__ == '__main__':
+    build_GAN(10)
