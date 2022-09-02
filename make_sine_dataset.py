@@ -5,7 +5,7 @@ import tensorflow as tf
 
 def make_sine_dataset(
         time_step_count, training_example_count, sample_rate,
-        minimum_frequency, maximum_frequency):
+        minimum_frequency, maximum_frequency, randomize_phase=True):
     """
     Creates a dataset of sine waves uniformly distributed at random
     frequencies.
@@ -24,12 +24,40 @@ def make_sine_dataset(
     time_steps = np.arange(0, time_step_count)[None] \
         .repeat(training_example_count, 0)
 
-    samples = np.random.uniform(
-        minimum_frequency, maximum_frequency, [training_example_count])
+    frequencies = np.random.uniform(
+        minimum_frequency, maximum_frequency, [training_example_count]
+    )[:, None]
+
+    if randomize_phase:
+        phases = np.random.uniform(0, tau, [training_example_count])[:, None]
+    else:
+        phases = 0
 
     training_examples = np.sin(
-        samples[:, None] * time_steps * tau / sample_rate)
+        frequencies * time_steps * tau / sample_rate + phases)
 
     training_data = tf.data.Dataset.from_tensor_slices(training_examples)
 
     return training_data
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
+    test_dataset = make_sine_dataset(
+        time_step_count=10_000,
+        training_example_count=1_100,
+        sample_rate=44_100,
+        minimum_frequency=21,
+        maximum_frequency=300,
+        randomize_phase=True
+    )
+
+    display_example_count = 5
+    _, axes = plt.subplots(display_example_count, 1)
+
+    for example_number, example in enumerate(
+            test_dataset.take(display_example_count)):
+        axes[example_number].plot(example)
+
+    plt.show()
