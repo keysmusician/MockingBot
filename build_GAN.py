@@ -99,30 +99,17 @@ def build_GAN(latent_dimensions):
         GAN: The complete generative adversarial network.
     '''
     # Generator - Recurrent architecture:
-    frequency_dimensions, time_steps = 512, 75
+    time_steps, frequency_dimensions = 75, 512
 
     latent_features = keras.Input(shape=(latent_dimensions, 1))
 
-    lstm = keras.layers.LSTM(frequency_dimensions)(latent_features)
+    rnn = keras.layers.GRU(time_steps)(latent_features)
 
-    reshape = keras.layers.Reshape([frequency_dimensions, 1])(lstm)
+    dense = keras.layers.Dense(time_steps * frequency_dimensions)(rnn)
 
-    lstm_t = keras.layers.LSTM(frequency_dimensions)(reshape)
+    reshape = keras.layers.Reshape([time_steps, frequency_dimensions])(dense)
 
-    reshape_2 = keras.layers.Reshape([1, frequency_dimensions, 1])(lstm_t)
-
-    for _ in range(time_steps - 1):
-        lstm_t2 = keras.layers.LSTM(frequency_dimensions)(reshape)
-
-        reshape_cat = keras.layers.Reshape(
-            [1, frequency_dimensions, 1])(lstm_t2)
-
-        reshape_2 = keras.layers.Concatenate(axis=1)([
-            reshape_2,
-            reshape_cat
-        ])
-
-    generator = keras.Model(latent_features, reshape_2)
+    generator = keras.Model(latent_features, reshape)
 
     '''
     # Output dimensions:
