@@ -6,10 +6,12 @@ import tensorflow as tf
 
 
 class GAN(keras.Model):
-    ''' A generative adversarial network. '''
+    '''
+    A generative adversarial network.
+    '''
 
-    def __init__(self, discriminator, generator, latent_dimensions):
-        super(GAN, self).__init__()
+    def __init__(self, discriminator, generator, latent_dimensions, **kwargs):
+        super(GAN, self).__init__(**kwargs)
 
         self.discriminator = discriminator
 
@@ -17,9 +19,11 @@ class GAN(keras.Model):
 
         self.latent_dimensions = latent_dimensions
 
+
     @property
     def metrics(self):
         return [self.generator_loss_metric, self.discriminator_loss_metric]
+
 
     def compile(
             self, discriminator_optimizer, generator_optimizer,
@@ -38,6 +42,7 @@ class GAN(keras.Model):
 
         self.discriminator_loss_metric = keras.metrics.Mean(
             name="discriminator_loss")
+
 
     def train_step(self, targets):
         batch_size = tf.shape(targets)[0]
@@ -98,40 +103,37 @@ def build_GAN(latent_dimensions):
         Discriminator: The discriminator Keras model.
         GAN: The complete generative adversarial network.
     '''
-    # Generator - Recurrent architecture:
+    # NOTE: Don't forget to rename the model if you change the architecture
+    # for logging purposes. Alternatively, make it automatically detect when a
+    # change has been made and come with a name so you don't log something
+    # under the wrong name.
+
+    # Generator - Dense architecture:
     time_steps, frequency_dimensions = 75, 512
 
-    latent_features = keras.Input(shape=(latent_dimensions, 1))
-
-    rnn = keras.layers.GRU(time_steps)(latent_features)
-
-    dense = keras.layers.Dense(time_steps * frequency_dimensions)(rnn)
-
-    reshape = keras.layers.Reshape([time_steps, frequency_dimensions])(dense)
-
-    generator = keras.Model(latent_features, reshape)
-
-    '''
-    # Output dimensions:
-    a, b = 75, 512
+    generator = keras.models.Sequential()
 
     generator.add(
         keras.layers.Dense(
             25, activation='relu', input_shape=(latent_dimensions,))
     )
 
-    tanh = keras.activations.tanh
+    relu = keras.activations.relu
 
-    generator.add(keras.layers.Dense(25, activation=tanh))
+    generator.add(keras.layers.Dense(100, activation=relu))
 
-    generator.add(keras.layers.Dense(25, activation=tanh))
+    generator.add(keras.layers.Dense(200, activation=relu))
 
-    generator.add(keras.layers.Dense(25, activation=tanh))
+    generator.add(keras.layers.Dense(300, activation=relu))
 
-    generator.add(keras.layers.Dense(a * b))
+    generator.add(keras.layers.Dense(400, activation=relu))
 
-    generator.add(keras.layers.Reshape((a, b)))
-    '''
+    generator.add(keras.layers.Dense(
+        time_steps + frequency_dimensions, activation=relu))
+
+    generator.add(keras.layers.Dense(time_steps * frequency_dimensions))
+
+    generator.add(keras.layers.Reshape((time_steps, frequency_dimensions)))
 
 
     # Discriminator:
@@ -164,9 +166,17 @@ def build_GAN(latent_dimensions):
 
 
     # GAN:
-    gan = GAN(discriminator, generator, latent_dimensions)
+    gan = GAN(
+        discriminator,
+        generator,
+        latent_dimensions,
+        name='Dense4CentNet-ReLU' # Rename if you change the architecture
+    )
 
     return generator, discriminator, gan
 
+
 if __name__ == '__main__':
+    # Test that the model builds and the forward pass behaves:
     build_GAN(10)
+    # Include test_model here
