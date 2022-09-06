@@ -295,11 +295,17 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
 
         self.write_frequency = write_frequency
 
-        try:
-            self.file_number = len(
-                os.listdir(TensorBoard_directory / 'GAN' / 'audio'))
-        except FileNotFoundError:
-            self.file_number = 0
+        self.file_number = 0
+
+        directory_numbers = [-1]
+
+        for directory in os.listdir(TensorBoard_directory / 'GAN'):
+            try:
+                directory_numbers.append(int(directory))
+            except ValueError:
+                continue
+
+        self.file_number = max(directory_numbers) + 1
 
 
     def on_epoch_end(self, epoch, logs=None):
@@ -417,8 +423,7 @@ gan.fit(
         tf.keras.callbacks.TensorBoard(
             log_dir=TensorBoard_directory / 'logs',
             histogram_freq=1
-        ),
-        tf.keras.callbacks.LearningRateScheduler(learning_rate_schedule)
+        )
     ]
 )
 
