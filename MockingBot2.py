@@ -1,5 +1,5 @@
 '''
-An unsupervised additive general generative audio model.
+An unsupervised additive generative general audio model.
 '''
 # Create a dataset of sine waves
 from make_sine_dataset import make_sine_dataset
