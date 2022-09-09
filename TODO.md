@@ -6,8 +6,6 @@
 
 - Merge `test_model.py` with `load_GAN.py`
 
-- Set up training checkpoints
-
 - Find more datasets. 
 
     I need data from a wider range of sources. I currently have about 900 kick drum
@@ -24,9 +22,13 @@
 
     I think three sources should suffice. See make_datasets.py
 
-- Make it just as easy to switch to the mock sine dataset as it is to switch to WAV datasets
 
 - Check out other portfolio READMEs and update yours (compare with last year's portfolio project)
+
+### Low priority:
+- Set up training checkpoints
+
+- Make it just as easy to switch to the mock sine dataset as it is to switch to WAV datasets
 
 - Add a `simulation_count` parameter to `test_generator` to generate and plot more than one example at a time.
 
