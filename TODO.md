@@ -1,16 +1,12 @@
 # To-do List
 
-- Ensure better automatic documentation of tensorboard audio & spectrogram logs (automatically save the model name and prompt yourself to document what you changed in the particular run).
-
 - Find a way to listen to the output of your latest model
 
-- Ensure saved models will not overwrite existing models
+- Ensure better automatic documentation of tensorboard audio & spectrogram logs (automatically save the model name and prompt yourself to document what you changed in the particular run).
 
 - Merge `test_model.py` with `load_GAN.py`
 
 - Set up training checkpoints
-
-- Maybe auto-save models if you interrupt training
 
 - Find more datasets. 
 
@@ -30,12 +26,26 @@
 
 - Make it just as easy to switch to the mock sine dataset as it is to switch to WAV datasets
 
-- Fix "Check your callbacks" warning
-
 - Check out other portfolio READMEs and update yours (compare with last year's portfolio project)
 
+- Add a `simulation_count` parameter to `test_generator` to generate and plot more than one example at a time.
+
+- Fix "Check your callbacks" warning
+
+- Fix "WARNING:tensorflow:No training configuration found in save file, so the model was *not* compiled. Compile it manually." for generator and discriminator models
+
+- Implement a forward pass for GAN.save() to work?
+
 ## Things to try
-- Use ReLU
+- Increase dataset size
+
+- Use leaky ReLU in discriminator
+
+- Ensure discriminator is architecturally adequate
+
+- Go back to a deconvolution architecture for the generator
+
+- Use ReLU in the generator
 
 - Go back to that LSTM-Dense model but try it on the Meows dataset
 
@@ -56,6 +66,3 @@
     - Image size: [128, 512]
 
 - Augment data with slight pitch shifting
-
-## Done
-- In GAN_Monitor, you should be able to simply infer the number of latent dimensions from the model
