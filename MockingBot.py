@@ -239,6 +239,8 @@ training_dataset = make_sine_dataset(
 print('Dataset element shape:', training_dataset.element_spec.shape)
 '''
 
+spectrogram_shape = training_dataset.element_spec.shape[1:]
+
 
 '''
 Defines the model compilation settings.
@@ -295,11 +297,21 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
 
         self.write_frequency = write_frequency
 
-        self.file_number = 0
 
+    def on_train_begin(self, logs=None):
+        '''
+        Determines the file number of the folder for logging spectrograms.
+
+        logs: Unused.
+        '''
         directory_numbers = [-1]
 
-        for directory in os.listdir(TensorBoard_directory / 'GAN'):
+        try:
+            trial_files = os.listdir(TensorBoard_directory / self.model.name)
+        except FileNotFoundError:
+            trial_files = []
+
+        for directory in trial_files:
             try:
                 directory_numbers.append(int(directory))
             except ValueError:
@@ -308,18 +320,22 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         self.file_number = max(directory_numbers) + 1
 
 
-    def on_epoch_end(self, epoch, logs=None):
+    def on_train_end(self, logs=None):
+        '''
+        Writes a spectrogram and audio file after the final epoch.
+        '''
+        self.__write_logs()
+
+
+    def __write_logs(self):
         '''
         Writes a spectrogram and audio file after each epoch as a TensorBoard
         event.
 
-        epoch: The just-completed epoch.
-        logs: Unused.
-        '''
-        # Only write every `write_frequency` epochs
-        if epoch % self.write_frequency != 0:
-            return
+        Must only be called after training begins.
 
+        epoch: The last completed epoch.
+        '''
         random_latent_vectors = tf.random.normal(
             shape=(self.simulation_count, self.model.latent_dimensions),
             seed=0
@@ -345,26 +361,46 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         # Normalize amplitude
         reconstructed_signal *= 1 / tf.reduce_max(reconstructed_signal)
 
-        file_number = str(self.file_number)
+        trial_number = str(self.file_number)
 
         file_writer = tf.summary.create_file_writer(
-            str(TensorBoard_directory / 'GAN' / 'audio' / file_number))
+            str(TensorBoard_directory / self.model.name / trial_number /
+                'audio')
+        )
 
-        with file_writer.as_default(step=epoch + 1):
+        with file_writer.as_default(step=self.epoch + 1):
             tf.summary.audio(
                 name='Audio',
                 data=reconstructed_signal[:, :, None],
                 sample_rate=sample_rate
             )
 
-        file_writer = tf.summary.create_file_writer(str(
-            TensorBoard_directory / 'GAN' / 'spectrograms' / file_number))
+        file_writer = tf.summary.create_file_writer(
+            str(TensorBoard_directory / self.model.name / trial_number /
+                'spectrograms')
+        )
 
-        with file_writer.as_default(step=epoch + 1):
+        with file_writer.as_default(step=self.epoch + 1):
             tf.summary.image(
                 name='Spectrogram',
                 data=simulations[:, :, :, None] * 255
             )
+
+
+    def on_epoch_end(self, epoch, logs=None):
+        '''
+        Writes a spectrogram and audio file after each epoch as a TensorBoard
+        event.
+
+        epoch: The just-completed epoch.
+        logs: Unused.
+        '''
+        self.epoch = epoch
+        # Only write every `write_frequency` epochs
+        if epoch % self.write_frequency == 0:
+            self.__write_logs()
+
+
 
 
 def learning_rate_schedule(epoch, learning_rate):
@@ -405,38 +441,48 @@ tf.keras.backend.clear_session()
 
 latent_dimensions = 100
 
-generator, discriminator, gan = build_GAN(latent_dimensions)
+generator, discriminator, gan = build_GAN(
+    latent_dimensions, *spectrogram_shape)
 
 gan.compile(
     discriminator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.1),
+    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
     generator_loss_function=generator_loss,
     discriminator_loss_function=discriminator_loss
 )
 
-gan.fit(
-    training_dataset,
-    epochs=800,
-    shuffle=True,
-    callbacks=[
-        GAN_Monitor(),
-        tf.keras.callbacks.TensorBoard(
-            log_dir=TensorBoard_directory / 'logs',
-            histogram_freq=1
-        )
-    ]
-)
-
-# Save the model weights
-MODEL_PATH = pathlib.Path('./saved_models') / gan.name
+print('\nIMPORTANT:\nDid you document any hyperparameter changes?\n')
 
 try:
-    model_version = len(os.listdir(MODEL_PATH))
-except (FileNotFoundError):
-    model_version = 0
+    gan.fit(
+        training_dataset,
+        epochs=180,
+        shuffle=True,
+        callbacks=[
+            GAN_Monitor(),
+            tf.keras.callbacks.TensorBoard(
+                log_dir=TensorBoard_directory / 'logs',
+                histogram_freq=1
+            )
+        ]
+    )
+except KeyboardInterrupt:
+    # Wrap this in a function:
+    print()
+    save_models = input('Save models before quitting? ').strip().lower()
 
-MODEL_PATH = MODEL_PATH / f'v{model_version}'
+    if save_models in ('n', 'no', 'nope', 'nah'):
+        print("Quitting without saving.")
 
-gan.generator.save(MODEL_PATH / 'generator')
+        exit()
+    elif save_models in ('y', 'yes', 'yeah', 'please'):
+        print('Saving...')
+    else:
+        print("I didn't understand, saving just in case...")
 
-gan.discriminator.save(MODEL_PATH / 'discriminator')
+# Save the model weights
+SAVED_MODELS_PATH = pathlib.Path('./saved_models')
+
+# I have yet to implement `GAN.save()`
+gan.save_networks(SAVED_MODELS_PATH)
+
