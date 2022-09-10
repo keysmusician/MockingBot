@@ -144,7 +144,7 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
     # Add an axis for the GRU:
     reshape = keras.layers.Reshape([latent_dimensions, 1])(latent_features)
 
-    gru = keras.layers.GRU(time_steps)(reshape)
+    gru = keras.layers.LSTM(time_steps)(reshape)
 
     dense = keras.layers.Dense(time_steps * frequency_steps)(gru)
 
@@ -187,7 +187,7 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
         discriminator,
         generator,
         latent_dimensions,
-        name='Recurrent-Dense' # Rename if you change the architecture
+        name='LSTM(2?)-Dense' # Rename if you change the architecture
     )
 
     return generator, discriminator, gan

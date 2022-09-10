@@ -298,35 +298,6 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         self.write_frequency = write_frequency
 
 
-    def on_train_begin(self, logs=None):
-        '''
-        Determines the file number of the folder for logging spectrograms.
-
-        logs: Unused.
-        '''
-        directory_numbers = [-1]
-
-        try:
-            trial_files = os.listdir(TensorBoard_directory / self.model.name)
-        except FileNotFoundError:
-            trial_files = []
-
-        for directory in trial_files:
-            try:
-                directory_numbers.append(int(directory))
-            except ValueError:
-                continue
-
-        self.file_number = max(directory_numbers) + 1
-
-
-    def on_train_end(self, logs=None):
-        '''
-        Writes a spectrogram and audio file after the final epoch.
-        '''
-        self.__write_logs()
-
-
     def __write_logs(self):
         '''
         Writes a spectrogram and audio file after each epoch as a TensorBoard
@@ -401,6 +372,33 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
             self.__write_logs()
 
 
+    def on_train_begin(self, logs=None):
+        '''
+        Determines the file number of the folder for logging spectrograms.
+
+        logs: Unused.
+        '''
+        directory_numbers = [-1]
+
+        try:
+            trial_files = os.listdir(TensorBoard_directory / self.model.name)
+        except FileNotFoundError:
+            trial_files = []
+
+        for directory in trial_files:
+            try:
+                directory_numbers.append(int(directory))
+            except ValueError:
+                continue
+
+        self.file_number = max(directory_numbers) + 1
+
+
+    def on_train_end(self, logs=None):
+        '''
+        Writes a spectrogram and audio file after the final epoch.
+        '''
+        self.__write_logs()
 
 
 def learning_rate_schedule(epoch, learning_rate):
@@ -415,7 +413,7 @@ def learning_rate_schedule(epoch, learning_rate):
     if epoch < 100:
         return learning_rate
     else:
-        return learning_rate * 0.99
+        return learning_rate * 0.5
 
 
 # Set up training checkpoints in case training is interrupted:
@@ -446,7 +444,7 @@ generator, discriminator, gan = build_GAN(
 
 gan.compile(
     discriminator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.1),
     generator_loss_function=generator_loss,
     discriminator_loss_function=discriminator_loss
 )
@@ -456,7 +454,7 @@ print('\nIMPORTANT:\nDid you document any hyperparameter changes?\n')
 try:
     gan.fit(
         training_dataset,
-        epochs=180,
+        epochs=50,
         shuffle=True,
         callbacks=[
             GAN_Monitor(),

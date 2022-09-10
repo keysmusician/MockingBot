@@ -26,3 +26,5 @@ As others* have done when training audio models, trained over the real component
 [Macaulay Library](https://www.macaulaylibrary.org/2021/07/19/from-sound-to-images-part-1-a-deep-dive-on-spectrogram-creation/)
 
 
+# Related
+[Magenta GANSynth](https://magenta.tensorflow.org/gansynth)
