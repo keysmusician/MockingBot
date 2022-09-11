@@ -118,7 +118,7 @@ with wave.open(test_file_path.as_posix()) as wav:
 '''
 Builds and preprocesses the dataset.
 '''
-FT_frame_length, FT_frame_step = 513, 125
+FT_frame_length, FT_frame_step = 513, 74
 
 def load_wav(file_path):
     '''
@@ -197,13 +197,19 @@ def input_pipeline(file_path):
     return spectrogram / max
 
 
-batch_size = 44
+batch_size = 64
+
+desired_dataset_size = 60_000
 
 training_dataset = tf.data.Dataset.list_files(
     file_pattern=DATASET_PATH.as_posix() + '/[!.]*.wav',
     shuffle=True,
     seed=0
-).map(
+)
+
+dataset_size = len(training_dataset)
+
+training_dataset = training_dataset.map(
     map_func=input_pipeline,
     num_parallel_calls=tf.data.AUTOTUNE
 ).filter(
@@ -211,10 +217,13 @@ training_dataset = tf.data.Dataset.list_files(
       (not tf.math.reduce_any(tf.experimental.numpy.isnan(training_example)))
       and
       (not tf.math.reduce_any(tf.experimental.numpy.isinf(training_example)))
-).batch(batch_size)
+)\
+.batch(batch_size)
+# .repeat(int(desired_dataset_size / dataset_size))
 
+'''
 # Test the dataset:
-for training_example in training_dataset:
+for training_example in training_dataset.take(dataset_size):
     # Confirm there are no NaN's or inf's in the dataset:
     tf.debugging.assert_all_finite(training_example, str(training_example))
 
@@ -222,6 +231,7 @@ for training_example in training_dataset:
     if not tf.experimental.numpy.isclose(
           tf.reduce_max(training_example).numpy(), 1):
       raise ValueError(f'Tensor is not normalized: {training_example}')
+'''
 
 '''
 # Create a mock dataset of sine waves
@@ -287,7 +297,7 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
     Generates audio and spectrogram logs for TensorBoard.
     '''
 
-    def __init__(self, write_frequency=5, simulation_count=1):
+    def __init__(self, write_frequency=1, simulation_count=1):
         '''
         Initializes a GAN_Monitor.
 
@@ -342,7 +352,7 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         with file_writer.as_default(step=self.epoch + 1):
             tf.summary.audio(
                 name='Audio',
-                data=reconstructed_signal[:, :, None],
+                data=reconstructed_signal[:, :, tf.newaxis],
                 sample_rate=sample_rate
             )
 
@@ -354,7 +364,7 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         with file_writer.as_default(step=self.epoch + 1):
             tf.summary.image(
                 name='Spectrogram',
-                data=simulations[:, :, :, None] * 255
+                data=simulations[:, :, :, tf.newaxis] * 255
             )
 
 
@@ -444,7 +454,7 @@ generator, discriminator, gan = build_GAN(
 
 gan.compile(
     discriminator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.1),
+    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
     generator_loss_function=generator_loss,
     discriminator_loss_function=discriminator_loss
 )
@@ -456,6 +466,7 @@ try:
         training_dataset,
         epochs=50,
         shuffle=True,
+        use_multiprocessing=True,
         callbacks=[
             GAN_Monitor(),
             tf.keras.callbacks.TensorBoard(

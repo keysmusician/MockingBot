@@ -2,10 +2,6 @@
 
 - Find a way to listen to the output of your latest model
 
-- Ensure better automatic documentation of tensorboard audio & spectrogram logs (automatically save the model name and prompt yourself to document what you changed in the particular run).
-
-- Merge `test_model.py` with `load_GAN.py`
-
 - Find more datasets. 
 
     I need data from a wider range of sources. I currently have about 900 kick drum
@@ -26,6 +22,8 @@
 - Check out other portfolio READMEs and update yours (compare with last year's portfolio project)
 
 ### Low priority:
+- Merge `test_model.py` with `load_GAN.py`
+
 - Set up training checkpoints
 
 - Make it just as easy to switch to the mock sine dataset as it is to switch to WAV datasets
