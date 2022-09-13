@@ -194,7 +194,7 @@ def input_pipeline(file_path):
 
     max = tf.reduce_max(spectrogram)
 
-    return spectrogram / max
+    return spectrogram * 2 / max - 1
 
 
 batch_size = 64
@@ -219,7 +219,7 @@ training_dataset = training_dataset.map(
       (not tf.math.reduce_any(tf.experimental.numpy.isinf(training_example)))
 )\
 .batch(batch_size)
-# .repeat(int(desired_dataset_size / dataset_size))
+#.repeat(int(desired_dataset_size / dataset_size))
 
 '''
 # Test the dataset:
@@ -322,7 +322,8 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
             seed=0
         )
 
-        simulations = self.model.generator(random_latent_vectors).numpy()
+        simulations = self.model.generator(
+            random_latent_vectors).numpy() / 2 + 0.5
 
         # figure, axes = plt.subplots(2, 1)
 
@@ -353,7 +354,8 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
             tf.summary.audio(
                 name='Audio',
                 data=reconstructed_signal[:, :, tf.newaxis],
-                sample_rate=sample_rate
+                sample_rate=sample_rate,
+                description='Learning rate: 0.1 * .95^epoch'
             )
 
         file_writer = tf.summary.create_file_writer(
@@ -423,7 +425,7 @@ def learning_rate_schedule(epoch, learning_rate):
     if epoch < 100:
         return learning_rate
     else:
-        return learning_rate * 0.5
+        return learning_rate * 0.95
 
 
 # Set up training checkpoints in case training is interrupted:

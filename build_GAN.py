@@ -216,7 +216,7 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
             strides=2,
             output_padding=0,
             use_bias=False,
-            activation='sigmoid'
+            activation='tanh'
         ),
         # out: 128 x 512 x 1
 
