@@ -138,90 +138,27 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
     # change has been made and come with a name so you don't log something
     # under the wrong name.
 
-    # Generator - Convolution Transpose architecture:
+    # Generator - Dense architecture:
+
+    relu = keras.activations.relu
+
     generator = keras.Sequential([
-        keras.Input((latent_dimensions,)),
+        keras.layers.Dense(
+            25, activation=relu, input_shape=(latent_dimensions,)),
 
-        keras.layers.Reshape([1, 1, latent_dimensions]),
-        # Shape: (time_steps, frequency_steps, filters/channels/features)
+        keras.layers.Dense(100, activation=relu),
 
-        keras.layers.Conv2DTranspose(
-            filters=512,
-            kernel_size=4,
-            strides=(1, 5),
-            output_padding=(0, 4),
-            use_bias=False
-        ),
+        keras.layers.Dense(200, activation=relu),
 
-        keras.layers.BatchNormalization(),
+        keras.layers.Dense(300, activation=relu),
 
-        keras.layers.ReLU(),
-        # out: 4 x 8 x 512
+        keras.layers.Dense(400, activation=relu),
 
-        keras.layers.Conv2DTranspose(
-            filters=256,
-            kernel_size=1,
-            strides=(2, 4),
-            output_padding=(1, 3),
-            use_bias=False
-        ),
+        keras.layers.Dense(time_steps + frequency_steps, activation=relu),
 
-        keras.layers.BatchNormalization(),
+        keras.layers.Dense(time_steps * frequency_steps),
 
-        keras.layers.ReLU(),
-        # out: 8 x 32 x 256
-
-        keras.layers.Conv2DTranspose(
-            filters=128,
-            kernel_size=2,
-            strides=2,
-            output_padding=0,
-            use_bias=False
-        ),
-
-        keras.layers.BatchNormalization(),
-
-        keras.layers.ReLU(),
-        # out: 16 x 64 x 128
-
-        keras.layers.Conv2DTranspose(
-            filters=64,
-            kernel_size=2,
-            strides=2,
-            output_padding=0,
-            use_bias=False
-        ),
-
-        keras.layers.BatchNormalization(),
-
-        keras.layers.ReLU(),
-        # out: 32 x 128 x 64
-
-        keras.layers.Conv2DTranspose(
-            filters=32,
-            kernel_size=2,
-            strides=2,
-            output_padding=0,
-            use_bias=False
-        ),
-
-        keras.layers.BatchNormalization(),
-
-        keras.layers.ReLU(),
-        # out: 64 x 256 x 32
-
-        keras.layers.Conv2DTranspose(
-            filters=1,
-            kernel_size=2,
-            strides=2,
-            output_padding=0,
-            use_bias=False,
-            activation='tanh'
-        ),
-        # out: 128 x 512 x 1
-
-        # Drop the channels axis:
-        keras.layers.Reshape([128, 512])
+        keras.layers.Reshape((time_steps, frequency_steps))
     ])
 
 
@@ -259,7 +196,7 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
         discriminator,
         generator,
         latent_dimensions,
-        name='ConvTranspose' # Rename if you change the architecture
+        name='Dense4CentNet-ReLU' # Rename if you change the architecture
     )
 
     return generator, discriminator, gan
@@ -272,7 +209,7 @@ if __name__ == '__main__':
     # Test that the model builds without errors:
     generator, discriminator, gan = build_GAN(
         latent_dimensions=128,
-        time_steps=75,
+        time_steps=128,
         frequency_steps=512
     )
 

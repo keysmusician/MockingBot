@@ -26,8 +26,6 @@
 
 - Set up training checkpoints
 
-- Make it just as easy to switch to the mock sine dataset as it is to switch to WAV datasets
-
 - Add a `simulation_count` parameter to `test_generator` to generate and plot more than one example at a time.
 
 - Fix "Check your callbacks" warning

@@ -1,4 +1,6 @@
-# Create a dataset of sine waves
+'''
+Creates a mock dataset of random sine waves.
+'''
 import numpy as np
 import tensorflow as tf
 
@@ -45,7 +47,13 @@ def make_sine_dataset(
     else:
         training_data = training_examples
 
-    return tf.data.Dataset.from_tensor_slices(training_data)
+    dataset = tf.data.Dataset.from_tensor_slices(training_data)
+
+    dataset.sample_rate = sample_rate
+
+    dataset.bit_depth = 32
+
+    return dataset
 
 
 if __name__ == '__main__':
