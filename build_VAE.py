@@ -1,5 +1,5 @@
 '''
-Defines the autoencoder architecture.
+Defines the variational autoencoder architecture.
 '''
 import tensorflow as tf
 import tensorflow.keras as keras
