@@ -1,14 +1,14 @@
 '''
-Builds and preprocesses the dataset.
+Builds the dataset.
 '''
 from make_sine_dataset import make_sine_dataset
-from MockingBot_datasets import DatasetManager
+from dataset_manager import DatasetManager
 import tensorflow as tf
 
 
 # Register dataset sources
 dataset_manager = DatasetManager(dataset_sources={
-    'Sines': lambda _: make_sine_dataset(
+    'Sines': lambda: make_sine_dataset(
                 time_step_count=10_000,
                 training_example_count=1_100,
                 sample_rate=44_100,
@@ -27,6 +27,10 @@ dataset_manager.print_datasets()
 # in "Kicks" are not all in a consistent compatible structure.
 training_dataset = dataset_manager['Meows']
 
+
+'''
+Preprocesses the dataset.
+'''
 sample_rate = training_dataset.sample_rate
 
 FT_frame_length, FT_frame_step = 513, 74
@@ -122,7 +126,7 @@ training_dataset = training_dataset.map(
       (not tf.math.reduce_any(tf.experimental.numpy.isnan(training_example)))
       and
       (not tf.math.reduce_any(tf.experimental.numpy.isinf(training_example)))
-).batch(batch_size) # .repeat(int(desired_dataset_size / dataset_size))
+).batch(batch_size).repeat(int(desired_dataset_size / dataset_size))
 
 spectrogram_shape = training_dataset.element_spec.shape[1:]
 
@@ -331,10 +335,24 @@ from build_GAN import build_GAN
 
 tf.keras.backend.clear_session()
 
-latent_dimensions = 100
+latent_dimensions = 128
 
 generator, discriminator, gan = build_GAN(
     latent_dimensions, *spectrogram_shape)
+
+if False:
+    SAVED_MODELS_PATH = pathlib.Path('./saved_models')
+
+    # Choose a saved model folder here:
+    model_name = 'Dense4CentNet-ReLU'
+
+    version = 'v1'
+
+    gan.generator = tf.keras.models.load_model(
+        SAVED_MODELS_PATH / model_name / version / 'generator')
+
+    gan.discriminator = tf.keras.models.load_model(
+        SAVED_MODELS_PATH / model_name / version / 'discriminator')
 
 gan.compile(
     discriminator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -348,7 +366,7 @@ print('\nIMPORTANT:\nDid you document any hyperparameter changes?\n')
 try:
     gan.fit(
         training_dataset,
-        epochs=1000,
+        epochs=100,
         shuffle=True,
         use_multiprocessing=True,
         callbacks=[
@@ -359,9 +377,9 @@ try:
             )
         ]
     )
-except KeyboardInterrupt:
+except (Exception, KeyboardInterrupt) as exception:
     # Wrap this in a function:
-    print()
+    print('\nException occurred:', exception)
     save_models = input('Save models before quitting? ').strip().lower()
 
     if save_models in ('n', 'no', 'nope', 'nah'):
@@ -378,4 +396,3 @@ SAVED_MODELS_PATH = pathlib.Path('./saved_models')
 
 # I have yet to implement `GAN.save()`
 gan.save_networks(SAVED_MODELS_PATH)
-

@@ -220,7 +220,7 @@ class DatasetManager:
         dataset_details = self.__datasets.get(key)
 
         if dataset_details is None:
-            raise KeyError(f'No dataset found called: {key}')
+            raise KeyError(f'No dataset registered called: {key}')
         else:
             dataset = dataset_details.get('build')
             if dataset is None:
