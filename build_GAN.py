@@ -154,6 +154,8 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
 
         keras.layers.Dense(400, activation=relu),
 
+        keras.layers.Dense(500, activation=relu),
+
         keras.layers.Dense(time_steps + frequency_steps, activation=relu),
 
         keras.layers.Dense(time_steps * frequency_steps),
@@ -196,14 +198,14 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
         discriminator,
         generator,
         latent_dimensions,
-        name='Dense4CentNet-ReLU' # Rename if you change the architecture
+        name='Dense5CentNet-ReLU' # Rename if you change the architecture
     )
 
     return generator, discriminator, gan
 
 
 if __name__ == '__main__':
-    from test_gan import test_generator
+    from test_GAN import test_generator
 
 
     # Test that the model builds without errors:
