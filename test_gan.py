@@ -1,19 +1,18 @@
-"""
+'''
 Builds and tests a forward pass through a model.
-"""
+'''
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras import Model
 
 
 def test_generator(generator:Model, example_count=1):
-    """
+    '''
     Generates and displays a simulated spectrogram from a generator model.
 
     generator: The generator of a GAN, taking as input some latent vector.
     example_count: The number of simulated spectrograms to generate.
-    """
-
+    '''
     # Test the forward pass through the generator:
     _batch_size, latent_dimensions = generator.input_shape
 

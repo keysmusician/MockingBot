@@ -1,5 +1,9 @@
 # To-do List
 
+- Make a demo notebook
+
+- Add architecture details and diagram to your README and presentation.
+
 - Find a way to listen to the output of your latest model
 
 - Find more datasets. 
