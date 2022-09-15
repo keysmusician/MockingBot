@@ -19,7 +19,8 @@
     I think three sources should suffice. See make_datasets.py
 
 
-- Check out other portfolio READMEs and update yours (compare with last year's portfolio project)
+
+- Learn how to track hyperparameter changes in TensorBoard: (https://www.tensorflow.org/tensorboard/hyperparameter_tuning_with_hparams)
 
 ### Low priority:
 - Merge `test_model.py` with `load_GAN.py`
@@ -37,21 +38,15 @@
 ## Things to try
 - Increase dataset size
 
-- Use leaky ReLU in discriminator
-
 - Ensure discriminator is architecturally adequate
 
-- Go back to a deconvolution architecture for the generator
-
-- Use ReLU in the generator
+- Go back to a deconvolution architecture for the generator; It should work! (https://jovian.ai/aakashns/06b-anime-dcgan)
 
 - Go back to that LSTM-Dense model but try it on the Meows dataset
 
 - *Don't* normalize the spectrogram (to try to combat the noise floor)
 
-- Decrease layer width?
-
-- Higher learning rate &/ Keep learning rate high for longer
+- Higher learning rate &/ keep learning rate high for longer
 
 - Parameters from Macaulay Library:
 
@@ -64,3 +59,5 @@
     - Image size: [128, 512]
 
 - Augment data with slight pitch shifting
+
+- Filter out outliers in the training data

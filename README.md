@@ -5,23 +5,36 @@
 # MockingBot
 MockingBot is a generative sound effect model which learns to mimic the sound of its training data. Its goal is generate original audio that could convince a human it was not machine-generated.
 
-MockingBot was inspired by what I consider a deficiency in the game No Man's Sky. For all its procedurally generated magnificence, the quality of the fauna sounds is not commensurate with the rest of the environment. MockingBot is my attempt to remedy this inadequacy through machine learning.
+MockingBot was inspired by what I consider a deficiency in the game *No Man's Sky.* For all its procedurally generated magnificence, the quality of the fauna sounds is not commensurate with the rest of the environment. MockingBot is my attempt to remedy this inadequacy through machine learning.
+
+## Usage
+*This section in progress*
+
+You should be able to open the Google Colab notebook (not yet available), enter or generate some random numbers, and run a code cell to pass your numbers to the model for it to generate an audio simulation which you should be able to play in your browser via the iPython audio player.
 
 ## Architecture
 I tried many architectures (see [Process](#process)). The best one I tried was a GAN with a dense neural network as the generator and a convolutional neural network as the discriminator.
 
 MockingBot works by mapping a series of numbers (a random latent vector) to a spectrogram which should convincingly pass for the spectrogram of its training target (e.g, a cat meow). The spectrogram can then be inverse-Fourier-transformed into an audio signal. The generation process should be fast enough to be suitable for use in real-time situations such as in a video game.
 
-## Input pipeline
+## Input Pipeline
 My data preprocessing was relatively simple. As others* have done when training audio models, I trained over spectrograms created from the real component of the short-time fourier transform (STFT) of the training data (which were WAV audio files) rather than directly over the time-domain signals. This has the advantage of being phase-invariant, extracting the frequency components of the audio, as well as enabling convolutional architectures (since the STFT is 2D). Finally, I normalized the spectrograms to the range [0–1].
 
 *For example:
 [Macaulay Library](https://www.macaulaylibrary.org/2021/07/19/from-sound-to-images-part-1-a-deep-dive-on-spectrogram-creation/)
 
-## Usage
-*This section in progress*
+## File Descriptions
+`MockingBot_demo.ipynb`: A notebook that runs a demo of the model.
 
-You should be able to open the Google Colab notebook (not yet available), enter or generate some random numbers, and run a code cell to pass your numbers to the model for it to generate an audio simulation which you should be able to play in your browser via the iPython audio player.
+`build_GAN.py`: Defines and tests the GAN model architecture.
+
+`test_GAN`: Defines functions for generating simulations and ensuring the model is well defined. Also loads trained models and displays simulations.
+
+`train.py`: Imports a dataset, defines an input pipeline, and runs a training routine.
+
+`dataset_manager.py`: Defines a `DatasetManager` class to make it easy to switch between different datasets in `train.py`.
+
+`make_sine_dataset.py`: Creates a mock dataset of random sine waves.
 
 ## Process
 I started with a variational autoencoder (VAE), which was able to capture features in the data, but did not produce a wide variation in output, and the output was a bit of a blend between training examples, which did not sound convincing. I determined that a VAE would not be able to produce audio that sounded convincing since it's evaluated during training on how closely the output resembles the input. Consequently, it's not incentivized to be creative. For that reason, I switched to a generative adversarial network (GAN). This type of network is not directly penalized for generating something outside of the training examples, so long as it's similar enough that it can fool the discriminator, which is exactly what I wanted.
@@ -52,6 +65,16 @@ In other words, the more general the model, the more complex and resource-expens
 It seems that the model should be able to expand itself to capture arbitrarily complex relationships, but it should also be 
 able to compress such relationships into the simplest form while retaining an acceptable quality threshold.
 
+## Technologies
+MockingBot was developed using the following technologies:
+- Python 3.8.9
+- Numpy 1.23.1
+- Matplotlib 3.5.2
+- TensorFlow 2.9.2
+
+### Development Environment
+The original VAE architecture was built on Google Colab (**Ubuntu Bionic Beaver**) so that I could take advantage of TensorFlow I/O's extended ability to import WAV files (the function I wanted was not supported on MacBook Air (2020, M1)), however that didn't work out, so I returned to local development on **MacOS Monterey.**
+
 ## Author
 Justin Masayda [@keysmusician](https://github.com/keysmusician)
 <div align="center">
@@ -65,3 +88,7 @@ Justin Masayda [@keysmusician](https://github.com/keysmusician)
  
 </pre>
 </div>
+
+## License
+
+All rights reserved, but feel free to ask.
