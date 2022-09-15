@@ -40,19 +40,19 @@ I started with a variational autoencoder (VAE), which was able to capture featur
 I used a small conv-net discriminator architecture for each experiment since it seemed to perform well enough and did not appear to be responsible for any lack of quality in the generator.
 
 Generator architectures I tried:
-    - small (around 2-5 layers) dense
-    - small convolutional
-    - medium dense (with a couple different activation functions)
-    - small convolutional, with only time-domain deconvolution
-    - huge LSTM x LSTM (failed to train, too complex)
-    - LSTM + dense
-    - large dense
+- small (around 2-5 layers) dense
+- small convolutional
+- medium dense (with a couple different activation functions)
+- small convolutional, with only time-domain deconvolution
+- huge LSTM x LSTM (failed to train, too complex)
+- LSTM + dense
+- large dense
 
 I also tried the following optimizations:
-    discriminator warmup
-    higher learning rate
-    exponentially decaying learning rate schedule
-    jittering the loss function
+- discriminator warmup
+- higher learning rate
+- exponentially decaying learning rate schedule
+- jittering the loss function
 
 Additionally, I began working on a general-purpose additive synthesizer-like model which is a more parametric formulation of the problem. Contrary to the NNs, which discover order out of chaos, my parametric model aims to produce complexity from order. Using an additive approach, the model would learn where to increase complexity and add variation beginning from a simulation that is close to the training data. I hope to use unsupervised learning algorithms to discover the optimum parameters for reproducing any class of sounds. The challenges I faced designing this model were as follows:
 - It's easy to accidentally make a simplifying assumption which restricts the ability of the model to learn any sound (for example, assuming the sound follows the harmonic series, or at least that overtones have rational frequency ratios; Assuming that change in frequency or amplitude over time for any sound has a single parametric formula)
@@ -71,7 +71,7 @@ MockingBot was developed using the following technologies:
 - TensorFlow 2.9.2
 
 ### Development Environment
-The original VAE architecture was built on Google Colab (**Ubuntu Bionic Beaver**) so that I could take advantage of TensorFlow I/O's extended ability to import WAV files (the function I wanted was not supported on MacBook Air (2020, M1)), however that didn't work out, so I returned to local development on **MacOS Monterey.**
+The original VAE architecture was built in Google Colab (**Ubuntu Bionic Beaver**) so that I could take advantage of TensorFlow I/O's extended ability to import WAV files (the function I wanted was not supported on MacBook Air (2020, M1)), however that didn't work out, so I returned to local development on **MacOS Monterey.**
 
 ## Author
 Justin Masayda [@keysmusician](https://github.com/keysmusician)
