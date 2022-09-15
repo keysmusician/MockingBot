@@ -1,11 +1,14 @@
-# Create a dataset of sine waves
+'''
+Creates a mock dataset of random sine waves.
+'''
 import numpy as np
 import tensorflow as tf
 
 
 def make_sine_dataset(
         time_step_count, training_example_count, sample_rate,
-        minimum_frequency, maximum_frequency, randomize_phase=True):
+        minimum_frequency, maximum_frequency, randomize_phase=True,
+        include_labels=False):
     """
     Creates a dataset of sine waves uniformly distributed at random
     frequencies.
@@ -15,6 +18,9 @@ def make_sine_dataset(
     sample_rate: The sample rate.
     minimum_frequency: Minimum frequency (inclusive).
     maximum_frequency: Maximum frequency (exclusive).
+    randomize_phase: Whether to randomize frequency phase.
+    include_labels: Whether to include the frequency as a label for each
+        signal.
 
     Returns: `TF.data.Dataset`.
     """
@@ -36,21 +42,31 @@ def make_sine_dataset(
     training_examples = np.sin(
         frequencies * time_steps * tau / sample_rate + phases)
 
-    training_data = tf.data.Dataset.from_tensor_slices(training_examples)
+    if include_labels:
+        training_data = {'signal': training_examples, 'frequency': frequencies}
+    else:
+        training_data = training_examples
 
-    return training_data
+    dataset = tf.data.Dataset.from_tensor_slices(training_data)
+
+    dataset.sample_rate = sample_rate
+
+    dataset.bit_depth = 32
+
+    return dataset
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     test_dataset = make_sine_dataset(
-        time_step_count=10_000,
-        training_example_count=1_100,
+        time_step_count=7_000,
+        training_example_count=110,
         sample_rate=44_100,
         minimum_frequency=21,
         maximum_frequency=300,
-        randomize_phase=True
+        randomize_phase=True,
+        include_labels=True
     )
 
     display_example_count = 5
@@ -58,6 +74,9 @@ if __name__ == '__main__':
 
     for example_number, example in enumerate(
             test_dataset.take(display_example_count)):
-        axes[example_number].plot(example)
+        axes[example_number].plot(example['signal'])
+
+        frequency = example['frequency'].numpy().item()
+        axes[example_number].set_title(f'{frequency:.2f} Hz')
 
     plt.show()

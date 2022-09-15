@@ -1,6 +1,8 @@
 '''
 Defines the GAN architecture.
 '''
+import os
+import pathlib
 import tensorflow.keras as keras
 import tensorflow as tf
 
@@ -42,6 +44,30 @@ class GAN(keras.Model):
 
         self.discriminator_loss_metric = keras.metrics.Mean(
             name="discriminator_loss")
+
+
+    def save_networks(self, file_path, quiet=False):
+        '''
+        Saves the generator and discriminator models.
+
+        file_path: The path at which to save the models.
+        quiet: Whether to print a save confirmation or not.
+        '''
+        model_path = pathlib.Path(file_path) / self.name
+
+        try:
+            model_version = len(os.listdir(model_path))
+        except (FileNotFoundError):
+            model_version = 0
+
+        model_path = model_path / f'v{model_version}'
+
+        self.generator.save(model_path / 'generator')
+
+        self.discriminator.save(model_path / 'discriminator')
+
+        if not quiet:
+            print(f'Generator and discriminator saved to: {model_path}')
 
 
     def train_step(self, targets):
@@ -91,12 +117,16 @@ class GAN(keras.Model):
         }
 
 
-def build_GAN(latent_dimensions):
+def build_GAN(latent_dimensions, time_steps, frequency_steps):
     '''
     Creates a generative adversarial network (GAN).
 
     latent_dims: An integer containing the dimensions of the latent space
         representation.
+    time_steps: The resolution of the time domain of the generator's output and
+        the training dataset spectrograms.
+    frequency_steps: The resolution of the frequency domain of the generator's
+        output and the training dataset spectrograms.
 
     Returns: (Generator, Discriminator, GAN):
         Generator: The generator Keras model.
@@ -109,31 +139,27 @@ def build_GAN(latent_dimensions):
     # under the wrong name.
 
     # Generator - Dense architecture:
-    time_steps, frequency_dimensions = 75, 512
-
-    generator = keras.models.Sequential()
-
-    generator.add(
-        keras.layers.Dense(
-            25, activation='relu', input_shape=(latent_dimensions,))
-    )
 
     relu = keras.activations.relu
 
-    generator.add(keras.layers.Dense(100, activation=relu))
+    generator = keras.Sequential([
+        keras.layers.Dense(
+            25, activation=relu, input_shape=(latent_dimensions,)),
 
-    generator.add(keras.layers.Dense(200, activation=relu))
+        keras.layers.Dense(100, activation=relu),
 
-    generator.add(keras.layers.Dense(300, activation=relu))
+        keras.layers.Dense(200, activation=relu),
 
-    generator.add(keras.layers.Dense(400, activation=relu))
+        keras.layers.Dense(300, activation=relu),
 
-    generator.add(keras.layers.Dense(
-        time_steps + frequency_dimensions, activation=relu))
+        keras.layers.Dense(400, activation=relu),
 
-    generator.add(keras.layers.Dense(time_steps * frequency_dimensions))
+        keras.layers.Dense(time_steps + frequency_steps, activation=relu),
 
-    generator.add(keras.layers.Reshape((time_steps, frequency_dimensions)))
+        keras.layers.Dense(time_steps * frequency_steps),
+
+        keras.layers.Reshape((time_steps, frequency_steps))
+    ])
 
 
     # Discriminator:
@@ -145,7 +171,7 @@ def build_GAN(latent_dimensions):
             kernel_size=(5, 5),
             strides=(2, 2),
             padding='same',
-            input_shape=(time_steps, frequency_dimensions, 1)
+            input_shape=(time_steps, frequency_steps, 1)
         )
     )
 
@@ -177,6 +203,18 @@ def build_GAN(latent_dimensions):
 
 
 if __name__ == '__main__':
-    # Test that the model builds and the forward pass behaves:
-    build_GAN(10)
-    # Include test_model here
+    from test_GAN import test_generator
+
+
+    # Test that the model builds without errors:
+    generator, discriminator, gan = build_GAN(
+        latent_dimensions=128,
+        time_steps=128,
+        frequency_steps=512
+    )
+
+    # Ensure the forward pass behaves:
+    # test_gan(gan)
+    test_generator(generator)
+
+    generator.summary()

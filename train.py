@@ -1,124 +1,39 @@
 '''
-Helper functions and other objects to keep things clean and readable.
+Builds the dataset.
 '''
+from make_sine_dataset import make_sine_dataset
+from dataset_manager import DatasetManager
+import tensorflow as tf
 
 
-class DatasetType:
-    '''
-    A dataset source type.
+# Register dataset sources
+dataset_manager = DatasetManager(dataset_sources={
+    'Sines': lambda: make_sine_dataset(
+                time_step_count=10_000,
+                training_example_count=1_100,
+                sample_rate=44_100,
+                minimum_frequency=500,
+                maximum_frequency=15000
+            ), # Mock dataset of random sine waves
+})
 
-    May be either STATIC or DYNAMIC
-    '''
+dataset_manager.discover('/Volumes/T7/Code/Datasets')
 
-    STATIC = 1
-    DYNAMIC = 2
+dataset_manager.print_datasets()
 
-
-DYNAMIC_DATASETS = {
-    'Sines': []
-}
-
-def print_available_datasets(static_datasets_path):
-    '''
-    Prints the names of all datasets available for use in this project.
-
-    static_datasets_path: A path to WAV file datasets that can be loaded by
-        TensorFlow.
-    '''
-    print('Datasets:')
-
-    print('- Static (stored on drive):')
-
-    for dataset_name in sorted(
-            os.listdir(static_datasets_path), key=str.lower):
-        if not dataset_name.startswith('.'):
-            print(f'\t\t{dataset_name}')
-
-    print('- Dynamic (generated in memory):')
-
-    for dataset_name in DYNAMIC_DATASETS:
-        print(f'\t\t{dataset_name}')
-
-
-'''
-Makes datasets available.
-'''
-import os
-import pathlib
-
-
-DATASETS_PATH = pathlib.Path('/Volumes/T7/Code/Datasets/')
-
-
-# Show available datasets:
-print_available_datasets(DATASETS_PATH)
-
-
-'''
-Sets the project's dataset.
-'''
-# Choose the desired dataset here.
-# `DATASET_NAME` can be the name of any folder inside `DATASETS_PATH` or
-# any key of 'DYNAMIC_DATASETS'. If using a dataset from `DATASETS_PATH`,
-# set `DATASET_TYPE` to `DatsetType.STATIC`, otherwise set it to
-# `DatasetType.Dynamic`.
-
+# Choose the desired dataset here:
 # NOTE: "Kicks" actually does not work because the WAV files can be saved in
 # various structures, not all of which are supported by TensorFlow. The files
 # in "Kicks" are not all in a consistent compatible structure.
-DATASET_TYPE = DatasetType.DYNAMIC
-
-DATASET_NAME = 'Meows'
-
-DATASET_PATH = DATASETS_PATH / DATASET_NAME
+training_dataset = dataset_manager['Meows']
 
 
 '''
-Loads and displays a random WAV file from the dataset.
+Preprocesses the dataset.
 '''
-import matplotlib.pyplot as plt
-import random
-import tensorflow as tf
-import wave
+sample_rate = training_dataset.sample_rate
 
-
-filenames = [
-    filename for filename in os.listdir(DATASET_PATH)
-    if not filename.startswith('.') and filename.endswith('.wav')
-]
-
-test_filename = random.choice(filenames)
-
-print('File name:', test_filename)
-
-test_file_path = DATASET_PATH / test_filename
-
-with wave.open(test_file_path.as_posix()) as wav:
-    bit_depth = wav.getsampwidth() * 8
-
-    sample_rate = wav.getframerate()
-
-# print('Bit depth:', bit_depth)
-#
-# print('Sample rate:', sample_rate)
-
-# test_audio_tensor = tf.audio.decode_wav(
-#     contents=tf.io.read_file(test_file_path.as_posix()),
-#     desired_channels=1
-# ).audio
-#
-# print('Tensor dimensions:', test_audio_tensor.shape)
-#
-# plt.plot(test_audio_tensor)
-#
-# For Google Colab:
-# IPython.display.display(IPython.display.Audio(test_file_path, rate=sample_rate))
-
-
-'''
-Builds and preprocesses the dataset.
-'''
-FT_frame_length, FT_frame_step = 513, 125
+FT_frame_length, FT_frame_step = 513, 74
 
 def load_wav(file_path):
     '''
@@ -194,16 +109,16 @@ def input_pipeline(file_path):
 
     max = tf.reduce_max(spectrogram)
 
-    return spectrogram / max
+    return spectrogram
 
 
-batch_size = 44
+batch_size = 64
 
-training_dataset = tf.data.Dataset.list_files(
-    file_pattern=DATASET_PATH.as_posix() + '/[!.]*.wav',
-    shuffle=True,
-    seed=0
-).map(
+desired_dataset_size = 60_000
+
+dataset_size = len(training_dataset)
+
+training_dataset = training_dataset.map(
     map_func=input_pipeline,
     num_parallel_calls=tf.data.AUTOTUNE
 ).filter(
@@ -211,38 +126,20 @@ training_dataset = tf.data.Dataset.list_files(
       (not tf.math.reduce_any(tf.experimental.numpy.isnan(training_example)))
       and
       (not tf.math.reduce_any(tf.experimental.numpy.isinf(training_example)))
-).batch(batch_size)
+).batch(batch_size).repeat(int(desired_dataset_size / dataset_size))
 
-# Test the dataset:
-for training_example in training_dataset:
-    # Confirm there are no NaN's or inf's in the dataset:
-    tf.debugging.assert_all_finite(training_example, str(training_example))
+spectrogram_shape = training_dataset.element_spec.shape[1:]
 
-    # Confirm the values are normalized
-    if not tf.experimental.numpy.isclose(
-          tf.reduce_max(training_example).numpy(), 1):
-      raise ValueError(f'Tensor is not normalized: {training_example}')
-
-'''
-# Create a mock dataset of sine waves
-from make_sine_dataset import make_sine_dataset
-
-training_dataset = make_sine_dataset(
-    time_step_count=10_000,
-    training_example_count=1_100,
-    sample_rate=44_100,
-    minimum_frequency=21,
-    maximum_frequency=300) \
-    .map(input_pipeline, num_parallel_calls=tf.data.AUTOTUNE) \
-    .batch(batch_size)
-
-print('Dataset element shape:', training_dataset.element_spec.shape)
-'''
+# print('Dataset element shape:', training_dataset.element_spec.shape)
 
 
 '''
 Defines the model compilation settings.
 '''
+import pathlib
+import os
+
+
 TensorBoard_directory = pathlib.Path('./TensorBoard')
 
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
@@ -285,7 +182,7 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
     Generates audio and spectrogram logs for TensorBoard.
     '''
 
-    def __init__(self, write_frequency=5, simulation_count=1):
+    def __init__(self, write_frequency=1, simulation_count=1):
         '''
         Initializes a GAN_Monitor.
 
@@ -295,25 +192,16 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
 
         self.write_frequency = write_frequency
 
-        try:
-            self.file_number = len(
-                os.listdir(TensorBoard_directory / 'GAN' / 'audio'))
-        except FileNotFoundError:
-            self.file_number = 0
 
-
-    def on_epoch_end(self, epoch, logs=None):
+    def __write_logs(self):
         '''
         Writes a spectrogram and audio file after each epoch as a TensorBoard
         event.
 
-        epoch: The just-completed epoch.
-        logs: Unused.
-        '''
-        # Only write every `write_frequency` epochs
-        if epoch % self.write_frequency != 0:
-            return
+        Must only be called after training begins.
 
+        epoch: The last completed epoch.
+        '''
         random_latent_vectors = tf.random.normal(
             shape=(self.simulation_count, self.model.latent_dimensions),
             seed=0
@@ -339,26 +227,76 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         # Normalize amplitude
         reconstructed_signal *= 1 / tf.reduce_max(reconstructed_signal)
 
-        file_number = str(self.file_number)
+        trial_number = str(self.file_number)
 
         file_writer = tf.summary.create_file_writer(
-            str(TensorBoard_directory / 'GAN' / 'audio' / file_number))
+            str(TensorBoard_directory / self.model.name / trial_number /
+                'audio')
+        )
 
-        with file_writer.as_default(step=epoch + 1):
+        optimizer_details = self.model.generator_optimizer.get_config()
+
+        with file_writer.as_default(step=self.epoch + 1):
             tf.summary.audio(
                 name='Audio',
-                data=reconstructed_signal[:, :, None],
-                sample_rate=sample_rate
+                data=reconstructed_signal[:, :, tf.newaxis],
+                sample_rate=sample_rate,
+                description=f'{optimizer_details}'
             )
 
-        file_writer = tf.summary.create_file_writer(str(
-            TensorBoard_directory / 'GAN' / 'spectrograms' / file_number))
+        file_writer = tf.summary.create_file_writer(
+            str(TensorBoard_directory / self.model.name / trial_number /
+                'spectrograms')
+        )
 
-        with file_writer.as_default(step=epoch + 1):
+        with file_writer.as_default(step=self.epoch + 1):
             tf.summary.image(
                 name='Spectrogram',
-                data=simulations[:, :, :, None] * 255
+                data=simulations[:, :, :, tf.newaxis] * 255
             )
+
+
+    def on_epoch_end(self, epoch, logs=None):
+        '''
+        Writes a spectrogram and audio file after each epoch as a TensorBoard
+        event.
+
+        epoch: The just-completed epoch.
+        logs: Unused.
+        '''
+        self.epoch = epoch
+        # Only write every `write_frequency` epochs
+        if epoch % self.write_frequency == 0:
+            self.__write_logs()
+
+
+    def on_train_begin(self, logs=None):
+        '''
+        Determines the file number of the folder for logging spectrograms.
+
+        logs: Unused.
+        '''
+        directory_numbers = [-1]
+
+        try:
+            trial_files = os.listdir(TensorBoard_directory / self.model.name)
+        except FileNotFoundError:
+            trial_files = []
+
+        for directory in trial_files:
+            try:
+                directory_numbers.append(int(directory))
+            except ValueError:
+                continue
+
+        self.file_number = max(directory_numbers) + 1
+
+
+    def on_train_end(self, logs=None):
+        '''
+        Writes a spectrogram and audio file after the final epoch.
+        '''
+        self.__write_logs()
 
 
 def learning_rate_schedule(epoch, learning_rate):
@@ -373,7 +311,7 @@ def learning_rate_schedule(epoch, learning_rate):
     if epoch < 100:
         return learning_rate
     else:
-        return learning_rate * 0.99
+        return learning_rate * 0.95
 
 
 # Set up training checkpoints in case training is interrupted:
@@ -397,9 +335,24 @@ from build_GAN import build_GAN
 
 tf.keras.backend.clear_session()
 
-latent_dimensions = 100
+latent_dimensions = 128
 
-generator, discriminator, gan = build_GAN(latent_dimensions)
+generator, discriminator, gan = build_GAN(
+    latent_dimensions, *spectrogram_shape)
+
+if False:
+    SAVED_MODELS_PATH = pathlib.Path('./saved_models')
+
+    # Choose a saved model folder here:
+    model_name = 'Dense4CentNet-ReLU'
+
+    version = 'v1'
+
+    gan.generator = tf.keras.models.load_model(
+        SAVED_MODELS_PATH / model_name / version / 'generator')
+
+    gan.discriminator = tf.keras.models.load_model(
+        SAVED_MODELS_PATH / model_name / version / 'discriminator')
 
 gan.compile(
     discriminator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -408,30 +361,38 @@ gan.compile(
     discriminator_loss_function=discriminator_loss
 )
 
-gan.fit(
-    training_dataset,
-    epochs=800,
-    shuffle=True,
-    callbacks=[
-        GAN_Monitor(),
-        tf.keras.callbacks.TensorBoard(
-            log_dir=TensorBoard_directory / 'logs',
-            histogram_freq=1
-        ),
-        tf.keras.callbacks.LearningRateScheduler(learning_rate_schedule)
-    ]
-)
-
-# Save the model weights
-MODEL_PATH = pathlib.Path('./saved_models') / gan.name
+print('\nIMPORTANT:\nDid you document any hyperparameter changes?\n')
 
 try:
-    model_version = len(os.listdir(MODEL_PATH))
-except (FileNotFoundError):
-    model_version = 0
+    gan.fit(
+        training_dataset,
+        epochs=100,
+        shuffle=True,
+        use_multiprocessing=True,
+        callbacks=[
+            GAN_Monitor(),
+            tf.keras.callbacks.TensorBoard(
+                log_dir=TensorBoard_directory / 'logs',
+                histogram_freq=1
+            )
+        ]
+    )
+except (Exception, KeyboardInterrupt) as exception:
+    # Wrap this in a function:
+    print('\nException occurred:', exception)
+    save_models = input('Save models before quitting? ').strip().lower()
 
-MODEL_PATH = MODEL_PATH / f'v{model_version}'
+    if save_models in ('n', 'no', 'nope', 'nah'):
+        print("Quitting without saving.")
 
-gan.generator.save(MODEL_PATH / 'generator')
+        exit()
+    elif save_models in ('y', 'yes', 'yeah', 'please'):
+        print('Saving...')
+    else:
+        print("I didn't understand, saving just in case...")
 
-gan.discriminator.save(MODEL_PATH / 'discriminator')
+# Save the model weights
+SAVED_MODELS_PATH = pathlib.Path('./saved_models')
+
+# I have yet to implement `GAN.save()`
+gan.save_networks(SAVED_MODELS_PATH)
