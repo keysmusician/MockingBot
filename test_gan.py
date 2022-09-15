@@ -57,7 +57,7 @@ if __name__ == '__main__':
     SAVED_MODELS_PATH = pathlib.Path('./saved_models')
 
     # Choose a saved model folder here:
-    model_name = 'Dense4CentNet-tanh'
+    model_name = 'Dense4CentNet-ReLU/v1'
 
     generator = tf.keras.models.load_model(
         SAVED_MODELS_PATH / model_name / 'generator')
