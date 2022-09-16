@@ -8,9 +8,11 @@ MockingBot is a generative sound effect model which learns to mimic the sound of
 MockingBot was inspired by what I consider a deficiency in the game *No Man's Sky.* For all its procedurally generated magnificence, the quality of the fauna sounds is not commensurate with the rest of the environment. MockingBot is my attempt to remedy this inadequacy through machine learning.
 
 ## Usage
-*This section in progress*
+### In Google Colab
+Run [the Google Colab demo](https://colab.research.google.com/drive/1O0A5DRFeGcS6ns4gEVVU-dno8D2LkEQ6?usp=sharing), `MockingBot_Demo.ipynb` (Google account required) to display and generate a spectrogram and audio simulation in your browser.
 
-You should be able to open the Google Colab notebook (not yet available), enter or generate some random numbers, and run a code cell to pass your numbers to the model for it to generate an audio simulation which you should be able to play in your browser via the iPython audio player.
+### On Your Local Machine
+Alternatively, you can run the demo locally by downloading the demo notebook file, [`MockingBot_Demo.ipynb`](https://github.com/keysmusician/MockingBot/blob/main/MockingBot_Demo.ipynb), and [the demo model](https://drive.google.com/drive/folders/1Xe09PWARV-q_iMpH0jnRMhW2vS39OYtb?usp=sharing). After you unzip the downloads you'll have to modify `MockingBot_Demo.ipynb` to load the model from wherever you place it on your local machine. You will also need the project dependencies listed under [Technologies](#technologies) installed.
 
 ## Architecture
 I tried many architectures (see [Process](#process)). The best one I tried was a GAN with a dense neural network as the generator and a convolutional neural network as the discriminator.
