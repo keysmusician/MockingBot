@@ -9,10 +9,12 @@ MockingBot was inspired by what I consider a deficiency in the game *No Man's Sk
 
 ## Usage
 ### In Google Colab
-Run [the Google Colab demo](https://colab.research.google.com/drive/1O0A5DRFeGcS6ns4gEVVU-dno8D2LkEQ6?usp=sharing), `MockingBot_Demo.ipynb` (Google account required) to display and generate a spectrogram and audio simulation in your browser.
+Run [the Google Colab demo](https://colab.research.google.com/drive/1O0A5DRFeGcS6ns4gEVVU-dno8D2LkEQ6?usp=sharing), `MockingBot_Demo.ipynb` (Google account required) to display and generate an audio simulation in your browser.
+
+Simply click `Runtime` > `Run All`. The notebook will download the model, import the required libraries, and generate an audio sample which will be displayed in an audio player along with a spectrogram and waveform graph.
 
 ### On Your Local Machine
-Alternatively, you can run the demo locally by downloading the demo notebook file, [`MockingBot_Demo.ipynb`](https://github.com/keysmusician/MockingBot/blob/main/MockingBot_Demo.ipynb), and [the demo model](https://drive.google.com/drive/folders/1Xe09PWARV-q_iMpH0jnRMhW2vS39OYtb?usp=sharing). After you unzip the downloads you'll have to modify `MockingBot_Demo.ipynb` to load the model from wherever you place it on your local machine. You will also need the project dependencies listed under [Technologies](#technologies) installed.
+Alternatively, you can download and run the demo [`MockingBot_Demo.ipynb`](https://github.com/keysmusician/MockingBot/blob/main/MockingBot_Demo.ipynb) locally if you have Jupyter and the project dependencies listed under [Technologies](#technologies) installed. The demo model should download automatically, but you can also download it manually [here](https://drive.google.com/drive/folders/1Xe09PWARV-q_iMpH0jnRMhW2vS39OYtb?usp=sharing). Note that if you download the model manually, you'll have to modify the code to load the model from wherever you place it on your local machine.
 
 ## Architecture
 I tried many architectures (see [Process](#process)). The best one I tried was a GAN with a dense neural network as the generator and a convolutional neural network as the discriminator.
