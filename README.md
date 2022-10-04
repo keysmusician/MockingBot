@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://user-images.githubusercontent.com/74752740/190259121-0f200bc3-d668-4e52-bbdf-43888bdc4817.jpg" alt="Pixelated bird">
+    <img src="assets/MockingBot.jpg" alt="Pixelated bird">
 </div>
 
 # MockingBot
@@ -14,10 +14,12 @@ Run [the Google Colab demo](https://colab.research.google.com/drive/1O0A5DRFeGcS
 Simply click `Runtime` > `Run All`. The notebook will download the model, import the required libraries, and generate an audio sample which will be displayed in an audio player along with a spectrogram and waveform graph.
 
 ### On Your Local Machine
-Alternatively, you can download and run the demo [`MockingBot_Demo.ipynb`](https://github.com/keysmusician/MockingBot/blob/main/MockingBot_Demo.ipynb) locally if you have Jupyter and the project dependencies listed under [Technologies](#technologies) installed. The demo model should download automatically, but you can also download it manually [here](https://drive.google.com/drive/folders/1Xe09PWARV-q_iMpH0jnRMhW2vS39OYtb?usp=sharing). Note that if you download the model manually, you'll have to modify the code to load the model from wherever you place it on your local machine.
+Alternatively, you can download and run the demo [`MockingBot_Demo.ipynb`](/MockingBot_Demo.ipynb) locally if you have Jupyter and the project dependencies listed under [Technologies](#technologies) installed. The demo model should download automatically, but you can also download it manually [here](https://drive.google.com/drive/folders/1Xe09PWARV-q_iMpH0jnRMhW2vS39OYtb?usp=sharing). Note that if you download the model manually, you'll have to modify the code to load the model from wherever you place it on your local machine.
 
 ## Architecture
-I tried many architectures (see [Process](#process)). The best one I tried was a GAN with a dense neural network as the generator and a convolutional neural network as the discriminator.
+I tried many architectures (see [Process](#process)). The best one I tried was a GAN with a dense neural network as the generator and a convolutional neural network as the discriminator (see [`build_GAN.py`](/build_GAN.py) for the model definition):
+
+![MockingBot's GAN architecture diagram](/assets/MockingBot_architecture.png)
 
 MockingBot works by mapping a series of numbers (a random latent vector) to a spectrogram which should convincingly pass for the spectrogram of its training target (e.g, a cat meow). The spectrogram can then be inverse-Fourier-transformed into an audio signal. The generation process should be fast enough to be suitable for use in real-time situations such as in a video game.
 
@@ -28,15 +30,15 @@ My data preprocessing was relatively simple. As others* have done when training 
 [Macaulay Library](https://www.macaulaylibrary.org/2021/07/19/from-sound-to-images-part-1-a-deep-dive-on-spectrogram-creation/)
 
 ## File Descriptions
-`build_GAN.py`: Defines and tests the GAN model architecture.
+[`build_GAN.py`](/build_GAN.py): Defines and tests the GAN model architecture.
 
-`test_GAN`: Defines functions for generating simulations and ensuring the model is well defined. Also loads trained models and displays simulations.
+[`test_GAN.py`](/test_GAN.py): Defines functions for generating simulations and ensuring the model is well defined. Also loads trained models and displays simulations.
 
-`train.py`: Imports a dataset, defines an input pipeline, and runs a training routine.
+[`train.py`](/train.py): Imports a dataset, defines an input pipeline, and runs a training routine.
 
-`dataset_manager.py`: Defines a `DatasetManager` class to make it easy to switch between different datasets in `train.py`.
+[`dataset_manager.py`](/dataset_manager.py): Defines a `DatasetManager` class to make it easy to switch between different datasets in `train.py`.
 
-`make_sine_dataset.py`: Creates a mock dataset of random sine waves.
+[`make_sine_dataset.py`](/make_sine_dataset.py): Creates a mock dataset of random sine waves.
 
 ## Process
 I started with a variational autoencoder (VAE), which was able to capture features in the data, but did not produce a wide variation in output, and the output was a bit of a blend between training examples, which did not sound convincing. I determined that a VAE would not be able to produce audio that sounded convincing since it's evaluated during training on how closely the output resembles the input. Consequently, it's not incentivized to be creative. For that reason, I switched to a generative adversarial network (GAN). This type of network is not directly penalized for generating something outside of the training examples, so long as it's similar enough that it can fool the discriminator, which is exactly what I wanted.
