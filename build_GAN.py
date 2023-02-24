@@ -133,9 +133,9 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
         Discriminator: The discriminator Keras model.
         GAN: The complete generative adversarial network.
     '''
-    # NOTE: Don't forget to rename the model if you change the architecture
-    # for logging purposes. Alternatively, make it automatically detect when a
-    # change has been made and come with a name so you don't log something
+    # NOTE: Don't forget to rename the model for logging purposes if you change
+    # the architecture. Alternatively, make it automatically detect when a
+    # change has been made and come up with a name so you don't log something
     # under the wrong name.
 
     # Generator - Dense architecture:
@@ -144,19 +144,11 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
 
     generator = keras.Sequential([
         keras.layers.Dense(
-            25, activation=relu, input_shape=(latent_dimensions,)),
-
-        keras.layers.Dense(100, activation=relu),
-
-        keras.layers.Dense(200, activation=relu),
-
-        keras.layers.Dense(300, activation=relu),
-
-        keras.layers.Dense(400, activation=relu),
+            250, activation=relu, input_shape=(latent_dimensions,)),
 
         keras.layers.Dense(500, activation=relu),
 
-        keras.layers.Dense(time_steps + frequency_steps, activation=relu),
+        keras.layers.Dense(1_000, activation=relu),
 
         keras.layers.Dense(time_steps * frequency_steps),
 
@@ -198,7 +190,7 @@ def build_GAN(latent_dimensions, time_steps, frequency_steps):
         discriminator,
         generator,
         latent_dimensions,
-        name='Dense5CentNet-ReLU' # Rename if you change the architecture
+        name='DoubleNet-ReLU' # Rename if you change the architecture
     )
 
     return generator, discriminator, gan
@@ -219,4 +211,4 @@ if __name__ == '__main__':
     # test_gan(gan)
     test_generator(generator)
 
-    generator.summary()
+    discriminator.summary()

@@ -114,7 +114,7 @@ def input_pipeline(file_path):
 
 batch_size = 64
 
-desired_dataset_size = 60_000
+desired_dataset_size = 512
 
 dataset_size = len(training_dataset)
 
@@ -199,8 +199,6 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         event.
 
         Must only be called after training begins.
-
-        epoch: The last completed epoch.
         '''
         random_latent_vectors = tf.random.normal(
             shape=(self.simulation_count, self.model.latent_dimensions),
@@ -261,7 +259,7 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         Writes a spectrogram and audio file after each epoch as a TensorBoard
         event.
 
-        epoch: The just-completed epoch.
+        epoch: The most recently completed epoch.
         logs: Unused.
         '''
         self.epoch = epoch
@@ -299,19 +297,19 @@ class GAN_Monitor(tf.keras.callbacks.Callback):
         self.__write_logs()
 
 
-def learning_rate_schedule(epoch, learning_rate):
-    '''
-    The learning rate schedule.
+# def learning_rate_schedule(epoch, learning_rate):
+#     '''
+#     The learning rate schedule.
 
-    epoch: The current epoch.
-    learning_rate: The initial learning rate at the current epoch.
+#     epoch: The current epoch.
+#     learning_rate: The initial learning rate at the current epoch.
 
-    Returns: The learning rate.
-    '''
-    if epoch < 100:
-        return learning_rate
-    else:
-        return learning_rate * 0.95
+#     Returns: The learning rate.
+#     '''
+#     if epoch < 100:
+#         return learning_rate
+#     else:
+#         return learning_rate * 0.95
 
 
 # Set up training checkpoints in case training is interrupted:
@@ -340,13 +338,12 @@ latent_dimensions = 128
 generator, discriminator, gan = build_GAN(
     latent_dimensions, *spectrogram_shape)
 
-if False:
+RELOAD_MODEL = True
+if RELOAD_MODEL:
     SAVED_MODELS_PATH = pathlib.Path('./saved_models')
 
     # Choose a saved model folder here:
-    model_name = 'Dense4CentNet-ReLU'
-
-    version = 'v1'
+    model_name, version = 'DoubleNet-ReLU', 'v0'
 
     gan.generator = tf.keras.models.load_model(
         SAVED_MODELS_PATH / model_name / version / 'generator')
@@ -356,7 +353,7 @@ if False:
 
 gan.compile(
     discriminator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.1),
+    generator_optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
     generator_loss_function=generator_loss,
     discriminator_loss_function=discriminator_loss
 )
@@ -366,7 +363,7 @@ print('\nIMPORTANT:\nDid you document any hyperparameter changes?\n')
 try:
     gan.fit(
         training_dataset,
-        epochs=100,
+        epochs=300,
         shuffle=True,
         use_multiprocessing=True,
         callbacks=[
